@@ -15,7 +15,12 @@ def random_masking(x, mask_ratio=0.75):
   x_masked = torch.gather(x,dim=1,index=indices_keep)
 
   indice_restore = torch.argsort(ids_shuffle,dim=1)
-  return x_masked, indice_restore
+
+  #ajout d'un mask main, jute pour faire un comparatif
+  mask = torch.ones(B, L, device=x.device)
+  mask[:, :len_keep] = 0
+  mask = torch.gather(mask, dim=1, index=indice_restore)
+  return x_masked,mask, indice_restore
 
 class MAE(nn.Module):
   def __init__(self, img_size=96, patch_size=16, in_channels=3, embed_dim=768, decoder_embed_dim=512):
@@ -44,13 +49,14 @@ class MAE(nn.Module):
     self.decoder_pred = nn.Linear(decoder_embed_dim, pixels_per_patch)
 
   def forward(self, images_patchs):
+    original_patches = images_patchs
     # --- ENCODEUR ---
     x = self.patch_embedder(images_patchs)
 
     cls_token = x[:, :1, :]
     patches = x[:, 1:, :]
 
-    patches_mask, restore = random_masking(patches, mask_ratio=0.75)
+    patches_mask,mask, restore = random_masking(patches, mask_ratio=0.75)
     x = torch.cat((cls_token, patches_mask), dim=1)
 
     for blk in self.encoder_blocks:
@@ -76,7 +82,11 @@ class MAE(nn.Module):
 
     for blk in self.decoder_blocks:
       x = blk(x)
+  
+    decoded_patches  = x[:, 1:, :]
+    pred_patches  = self.decoder_pred(decoded_patches)
 
-    patches = x[:, 1:, :]
-    x = self.decoder_pred(patches)
-    return x
+    #pour faire la comparaison
+    mask_expand = mask.unsqueeze(-1).type_as(pred_patches)
+    masked_patches = original_patches * (1 - mask_expand)
+    return pred_patches, masked_patches

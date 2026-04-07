@@ -27,7 +27,7 @@ def train_mae(model, dataloader, optimizer, device, epochs=10, patch_size=16, mo
             target_patches = patchify(images, patch_size=patch_size)
 
             optimizer.zero_grad()
-            pred_patches = model(target_patches)
+            pred_patches,_ = model(target_patches)
             loss = loss_calc(pred_patches, target_patches)
 
             loss.backward()

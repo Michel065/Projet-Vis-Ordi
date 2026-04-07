@@ -3,7 +3,7 @@ import torch.nn as nn
 import random
 
 from utils.patch import patchify, unpatchify
-from utils.plot import plot_2_image_reconstruction
+from utils.plot import plot_3_image_reconstruction
 
 
 def evaluate_mae(model, dataloader, device, patch_size=16):
@@ -17,7 +17,7 @@ def evaluate_mae(model, dataloader, device, patch_size=16):
             images = images.to(device)
 
             target_patches = patchify(images, patch_size=patch_size)
-            pred_patches = model(target_patches)
+            pred_patches,_ = model(target_patches)
 
             loss = loss_calc(pred_patches, target_patches)
             loss_total += loss.item()
@@ -47,8 +47,9 @@ def show_random_reconstruction_examples(model, dataloader, device, n=5, patch_si
         images = all_images[indices].to(device)
 
         target_patches = patchify(images, patch_size=patch_size)
-        pred_patches = model(target_patches)
+        pred_patches,masked_patches = model(target_patches)
 
         reconstructed_images = unpatchify(pred_patches,patch_size=patch_size,img_size=img_size,in_channels=in_channels)
-        plot_2_image_reconstruction(images,reconstructed_images,n)
+        masked_patches_images = unpatchify(masked_patches,patch_size=patch_size,img_size=img_size,in_channels=in_channels)
+        plot_3_image_reconstruction(images,masked_patches_images,reconstructed_images,n)
         

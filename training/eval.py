@@ -1,13 +1,21 @@
 import torch
-import torch.nn as nn
 import random
 
 from utils.patch import patchify, unpatchify
 from utils.plot import plot_2_image_reconstruction
 
 
+def masked_mse_loss(pred, target, mask):
+    """
+    MSE uniquement sur les patches masqués (cohérent avec le train).
+    """
+    loss = (pred - target) ** 2
+    loss = loss.mean(dim=-1)
+    loss = (loss * mask).sum() / mask.sum()
+    return loss
+
+
 def evaluate_mae(model, dataloader, device, patch_size=16):
-    loss_calc = nn.MSELoss()
     model.to(device)
     model.eval()
 
@@ -17,12 +25,14 @@ def evaluate_mae(model, dataloader, device, patch_size=16):
             images = images.to(device)
 
             target_patches = patchify(images, patch_size=patch_size)
-            pred_patches = model(target_patches)
 
-            loss = loss_calc(pred_patches, target_patches)
+            pred_patches, mask = model(target_patches)
+
+            loss = masked_mse_loss(pred_patches, target_patches, mask)
             loss_total += loss.item()
 
-            print(f"Eval | Iter {i + 1}/{len(dataloader)} | loss : {loss.item():.6f}",end="\r",flush=True)
+            print(f"Eval | Iter {i + 1}/{len(dataloader)} | loss : {loss.item():.6f}", end="\r", flush=True)
+
     print()
     loss_moy = loss_total / len(dataloader)
     print(f"Loss moyenne test : {loss_moy:.6f}")
@@ -33,22 +43,23 @@ def show_random_reconstruction_examples(model, dataloader, device, n=5, patch_si
     model.to(device)
     model.eval()
 
-    all_images = []
-
+    collected = []
     with torch.no_grad():
         for images, _ in dataloader:
-            all_images.append(images)
+            collected.append(images)
+            if sum(x.shape[0] for x in collected) >= n:
+                break
 
-        all_images = torch.cat(all_images, dim=0)
-
+        all_images = torch.cat(collected, dim=0)
         n = min(n, all_images.shape[0])
         indices = random.sample(range(all_images.shape[0]), n)
-
         images = all_images[indices].to(device)
 
         target_patches = patchify(images, patch_size=patch_size)
-        pred_patches = model(target_patches)
 
-        reconstructed_images = unpatchify(pred_patches,patch_size=patch_size,img_size=img_size,in_channels=in_channels)
-        plot_2_image_reconstruction(images,reconstructed_images,n)
-        
+        pred_patches, _ = model(target_patches)
+
+        reconstructed_images = unpatchify(
+            pred_patches, patch_size=patch_size, img_size=img_size, in_channels=in_channels
+        )
+        plot_2_image_reconstruction(images, reconstructed_images, n)

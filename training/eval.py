@@ -3,7 +3,16 @@ import random
 
 from utils.patch import patchify, unpatchify
 from utils.plot import plot_2_image_reconstruction
-from training.train import masked_mse_loss
+
+
+def masked_mse_loss(pred, target, mask):
+    """
+    MSE uniquement sur les patches masqués (cohérent avec le train).
+    """
+    loss = (pred - target) ** 2
+    loss = loss.mean(dim=-1)
+    loss = (loss * mask).sum() / mask.sum()
+    return loss
 
 
 def evaluate_mae(model, dataloader, device, patch_size=16):
@@ -14,9 +23,11 @@ def evaluate_mae(model, dataloader, device, patch_size=16):
     with torch.no_grad():
         for i, (images, _) in enumerate(dataloader):
             images = images.to(device)
+
             target_patches = patchify(images, patch_size=patch_size)
 
             pred_patches, mask = model(target_patches)
+
             loss = masked_mse_loss(pred_patches, target_patches, mask)
             loss_total += loss.item()
 
@@ -45,6 +56,7 @@ def show_random_reconstruction_examples(model, dataloader, device, n=5, patch_si
         images = all_images[indices].to(device)
 
         target_patches = patchify(images, patch_size=patch_size)
+
         pred_patches, _ = model(target_patches)
 
         reconstructed_images = unpatchify(

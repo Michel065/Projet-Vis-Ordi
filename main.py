@@ -29,8 +29,8 @@ def run_mae(path="outputs/model/MAE.pth", load=True, do_train=False):
         plot_hist(loss_history)
         save_model(model, path)
 
-    evaluate(model, dataloader_test, device)
-    show_random_reconstruction_MAE_examples(model, dataloader_test, device, 5)
+    evaluate(model, dataloader_test, device,patch_size=8)
+    show_random_reconstruction_MAE_examples(model, dataloader_test, device, 5,patch_size=8)
 
 def run_ae(path="outputs/model/AE.pth", load=True, do_train =False):
     dataloader_train = get_dataLoader_train()
@@ -48,12 +48,12 @@ def run_ae(path="outputs/model/AE.pth", load=True, do_train =False):
     if do_train:
         print("entrainement AE")
         optimizer = Adam(model.parameters(), lr=1e-4)
-        loss_history = train(model, dataloader_train, optimizer, device, epochs=5, patch_size=8)
+        loss_history = train(model, dataloader_train, optimizer, device, epochs=10, patch_size=8)
         plot_hist(loss_history)
         save_model(model, path)
 
-    evaluate(model, dataloader_test, device)
-    show_random_reconstruction_AE_examples(model, dataloader_test, device, 5)
+    evaluate(model, dataloader_test, device,patch_size=8)
+    show_random_reconstruction_AE_examples(model, dataloader_test, device, 5,patch_size=8)
 
 def run_ae_load_eval_classification(path="outputs/model/AE.pth",finetunning=False):
     epochs = 40
@@ -89,7 +89,7 @@ def run_mae_load_eval_classification(path="outputs/model/MAE.pth"):
 
 if __name__ == "__main__":
     # run_mae(load=True, do_train=False)
-    run_ae(load=False, do_train=True)
+    run_ae(load=True, do_train=False)
     run_ae_load_eval_classification()
     run_ae_load_eval_classification(finetunning=True)
     #run_mae_load_eval_classification()

@@ -8,7 +8,7 @@ transformations = transforms.Compose([
 
 dataset_stl10_train = torchvision.datasets.STL10(
     root="./data",
-    split="unlabeled",
+    split="train",
     download=True,
     transform=transformations
 )
@@ -35,15 +35,3 @@ def get_dataLoader_train(nbr_image=-1, batch_size=32, shuffle=True):
 
 def get_dataLoader_test(nbr_image=-1, batch_size=32, shuffle=True):
     return create_dataloader(dataset_stl10_test,batch_size,shuffle,nbr_image)
-
-
-#pour ensuite nos tests:
-dataset_stl10_train_label = torchvision.datasets.STL10(
-    root="./data",
-    split="train",
-    download=True,
-    transform=transformations
-)
-
-def get_dataLoader_train_label(nbr_image=-1, batch_size=32, shuffle=True): # utile pour le (linear probe et  Fine-tuning)
-    return create_dataloader(dataset_stl10_train_label, batch_size, shuffle, nbr_image)

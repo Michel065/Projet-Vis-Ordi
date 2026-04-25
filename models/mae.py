@@ -48,7 +48,7 @@ class MAE(nn.Module):
     pixels_per_patch = in_channels * patch_size * patch_size
     self.decoder_pred = nn.Linear(decoder_embed_dim, pixels_per_patch)
 
-  def forward(self, images_patchs):
+  def forward(self, images_patchs,return_masked=False):
     original_patches = images_patchs
     # --- ENCODEUR ---
     x = self.patch_embedder(images_patchs)
@@ -86,7 +86,18 @@ class MAE(nn.Module):
     decoded_patches  = x[:, 1:, :]
     pred_patches  = self.decoder_pred(decoded_patches)
 
-    #pour faire la comparaison
-    mask_expand = mask.unsqueeze(-1).type_as(pred_patches)
-    masked_patches = original_patches * (1 - mask_expand)
-    return pred_patches, masked_patches
+    if(return_masked): #on renvoie les deux dans le cas ou on veux faire un coparatif.
+      #pour faire la comparaison
+      mask_expand = mask.unsqueeze(-1).type_as(pred_patches)
+      masked_patches = original_patches * (1 - mask_expand)
+      return pred_patches , masked_patches 
+    else:
+      return pred_patches
+
+  def get_encoder_output(self, images_patchs):
+    x = self.patch_embedder(images_patchs)
+
+    for blk in self.encoder_blocks:
+        x = blk(x)
+
+    return x

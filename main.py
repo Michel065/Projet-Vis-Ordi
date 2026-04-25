@@ -9,8 +9,8 @@ from training.train import train_mae
 from training.eval import evaluate_mae,show_random_reconstruction_examples
 
 path="outputs/model/MAE.pth"
-load = False
-train = True
+load = True
+train = False
 
 dataloader_train = get_dataLoader_train()
 dataloader_test = get_dataLoader_test()
@@ -33,5 +33,4 @@ if(train):
 
 
 evaluate_mae(model,dataloader_test,device)
-
 show_random_reconstruction_examples(model,dataloader_test,device,5)
